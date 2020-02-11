@@ -21,6 +21,22 @@ NSInteger const MFDemoErrorCode = 100;
 
 @end
 
+@interface UIColor (Extension)
++ (UIColor *)colorWithHex:(int)hex;
+@end
+
+@implementation UIColor (Extension)
+
++ (UIColor *)colorWithHex:(int)hex
+{
+    return [UIColor colorWithRed:((CGFloat)((hex & 0xFF0000) >> 16)) / 255.0f
+                           green:((CGFloat)((hex & 0x00FF00) >> 8)) / 255.0f
+                            blue:((CGFloat)((hex & 0x0000FF) >> 0)) / 255.0f
+                           alpha:1.0];
+}
+
+@end
+
 @implementation MaterialTextFieldDemoViewController
 
 - (void)viewDidLoad
@@ -37,6 +53,7 @@ NSInteger const MFDemoErrorCode = 100;
 
 - (void)setupTextField1
 {
+    self.textField1.backgroundLayerColor = [UIColor colorWithHex:0xF3F3F3];
     self.textField1.animatesPlaceholder = NO;
     self.textField1.tintColor = [UIColor mf_greenColor];
     self.textField1.textColor = [UIColor mf_veryDarkGrayColor];
@@ -46,8 +63,10 @@ NSInteger const MFDemoErrorCode = 100;
 {
     self.textField2.tintColor = [UIColor mf_greenColor];
     self.textField2.textColor = [UIColor mf_veryDarkGrayColor];
+    self.textField2.textPadding = CGSizeMake(16, 16);
+    self.textField2.backgroundLayerColor = [UIColor colorWithHex:0xF3F3F3];
     self.textField2.defaultPlaceholderColor = [UIColor mf_darkGrayColor];
-    self.textField2.placeholderAnimatesOnFocus = YES;
+//    self.textField2.placeholderAnimatesOnFocus = YES;
 
     UIFontDescriptor * fontDescriptor = [self.textField2.font.fontDescriptor fontDescriptorWithSymbolicTraits:UIFontDescriptorTraitBold];
     UIFont *font = [UIFont fontWithDescriptor:fontDescriptor size:self.textField2.font.pointSize];
@@ -82,6 +101,7 @@ NSInteger const MFDemoErrorCode = 100;
 
 - (void)setupTextField5
 {
+    self.textField5.backgroundLayerColor = [UIColor colorWithHex:0xF3F3F3];
     [self validateTextField5Animated:NO];
 }
 

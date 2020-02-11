@@ -12,7 +12,7 @@ IB_DESIGNABLE
 @interface MFTextField : UITextField
 
 /**
- * textPadding.height: Padding above and below the text field, between the placeholder label and underline.
+ * textPadding.height: Padding above and below the text field, between the underline.
  * textPadding.width:  Horizontal padding on the left and right of the text field.
  */
 @property (nonatomic) IBInspectable CGSize textPadding;
@@ -87,5 +87,7 @@ IB_DESIGNABLE
  * errorPadding.width:  Horizontal padding on the left and right of the error label.
  */
 @property (nonatomic) IBInspectable CGSize errorPadding;
+
+@property (nonatomic) IBInspectable UIColor *backgroundLayerColor;
 
 @end

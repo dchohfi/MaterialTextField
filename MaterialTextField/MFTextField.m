@@ -18,6 +18,7 @@ static NSTimeInterval const MFDefaultAnimationDuration = 0.3;
 
 @property (nonatomic) CGRect textRect;
 @property (nonatomic) CALayer *underlineLayer;
+@property (nonatomic) CALayer *backgroundLayer;
 @property (nonatomic, readonly) BOOL isEmpty;
 
 @property (nonatomic) UILabel *placeholderLabel;
@@ -65,6 +66,7 @@ static NSTimeInterval const MFDefaultAnimationDuration = 0.3;
 {
     [self setDefaults];
     [self setupTextField];
+    [self setupBackgroundLayer];
     [self setupUnderline];
     [self setupErrorLabel];
 }
@@ -102,6 +104,13 @@ static NSTimeInterval const MFDefaultAnimationDuration = 0.3;
     [self.layer addSublayer:self.underlineLayer];
 }
 
+- (void)setupBackgroundLayer
+{
+    self.backgroundLayer = [CALayer layer];
+    [self layoutBackgroundLayer];
+    [self.layer insertSublayer:self.backgroundLayer atIndex:0];
+}
+
 - (void)setupPlaceholderLabel
 {
     self.placeholderLabel = [UILabel new];
@@ -133,7 +142,8 @@ static NSTimeInterval const MFDefaultAnimationDuration = 0.3;
 
 - (void)setupPlaceholderConstraints
 {
-    self.placeholderLabelTopConstraint = [self.placeholderLabel.topAnchor constraintEqualToAnchor:self.topAnchor];
+    self.placeholderLabelTopConstraint = [self.placeholderLabel.topAnchor constraintEqualToAnchor:self.topAnchor
+                                                                                         constant:self.textPadding.height];
     
     NSLayoutConstraint *leading = [self.placeholderLabel.leadingAnchor constraintEqualToAnchor:self.leadingAnchor
                                                                                       constant:self.textPadding.width];
@@ -319,6 +329,7 @@ static NSTimeInterval const MFDefaultAnimationDuration = 0.3;
     [super layoutSubviews];
 
     [self layoutUnderlineLayer];
+    [self layoutBackgroundLayer];
     [self mf_tintClearButton];
 
     if (self.animatesPlaceholder) {
@@ -330,6 +341,11 @@ static NSTimeInterval const MFDefaultAnimationDuration = 0.3;
 {
     [self updateUnderlineColor];
     [self updateUnderlineFrame];
+}
+
+- (void)layoutBackgroundLayer
+{
+    [self updateBackgroundLayer];
 }
 
 - (void)layoutPlaceholderLabelAnimated:(BOOL)animated
@@ -381,6 +397,18 @@ static NSTimeInterval const MFDefaultAnimationDuration = 0.3;
     }
 }
 
+- (void)updateBackgroundLayer
+{
+    CGFloat underlineHeight = self.isFirstResponder ? self.underlineEditingHeight : self.underlineHeight;
+    CGFloat yPos = CGRectGetMaxY(self.textRect) + self.textPadding.height - underlineHeight;
+    self.backgroundLayer.frame = CGRectMake(0, 0, CGRectGetWidth(self.bounds), yPos);
+}
+
+- (void)setBackgroundLayerColor:(UIColor *)backgroundLayerColor {
+    _backgroundLayerColor = backgroundLayerColor;
+    self.backgroundLayer.backgroundColor = backgroundLayerColor.CGColor;
+}
+
 #pragma mark - Placeholder
 
 - (UIFont *)defaultFontForPlaceholder
@@ -429,7 +457,7 @@ static NSTimeInterval const MFDefaultAnimationDuration = 0.3;
         [self.superview layoutIfNeeded];
 
         self.placeholderIsAnimating = YES;
-        self.placeholderLabelTopConstraint.constant = 0;
+        self.placeholderLabelTopConstraint.constant = self.textPadding.height;
 
         [UIView animateWithDuration:MFDefaultAnimationDuration
                               delay:0.0
@@ -447,7 +475,7 @@ static NSTimeInterval const MFDefaultAnimationDuration = 0.3;
     }
     else if (!animated) {
         self.placeholderLabel.alpha = 1.0f;
-        self.placeholderLabelTopConstraint.constant = 0;
+        self.placeholderLabelTopConstraint.constant = self.textPadding.height;
     }
 }
 
@@ -501,7 +529,7 @@ static NSTimeInterval const MFDefaultAnimationDuration = 0.3;
     UIColor *color;
 
     if (self.isFirstResponder) {
-        color = (self.hasError) ? self.errorColor : self.tintColor;
+        color = self.tintColor;
     }
     else {
         color = self.placeholderColor;
@@ -662,7 +690,7 @@ static NSTimeInterval const MFDefaultAnimationDuration = 0.3;
 
 - (CGFloat)adjustedYPositionForTextRect
 {
-    CGFloat top = ceil(self.textPadding.height);
+    CGFloat top = self.textPadding.height;
     if (self.animatesPlaceholder) {
         top += self.placeholderFont.lineHeight;
     }
@@ -671,12 +699,20 @@ static NSTimeInterval const MFDefaultAnimationDuration = 0.3;
 
 - (CGRect)editingRectForBounds:(CGRect)bounds
 {
-    return [self textRectForBounds:bounds];
+    CGRect rect = [self textRectForBounds:bounds];
+    BOOL isEmpty = self.text.length == 0;
+
+    if (!isEmpty) {
+        return rect;
+    } else {
+        return CGRectMake(rect.origin.x, rect.origin.y - (self.placeholderFont.lineHeight / 2), rect.size.width, rect.size.height);
+    }
 }
 
 - (CGRect)placeholderRectForBounds:(CGRect)bounds
 {
-    return [self textRectForBounds:bounds];
+    CGRect rect = [self textRectForBounds:bounds];
+    return CGRectMake(rect.origin.x, rect.origin.y - (self.placeholderFont.lineHeight / 2), rect.size.width, rect.size.height);
 }
 
 - (CGRect)clearButtonRectForBounds:(CGRect)bounds
