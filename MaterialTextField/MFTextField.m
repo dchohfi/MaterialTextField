@@ -32,11 +32,9 @@ static NSTimeInterval const MFDefaultAnimationDuration = 0.3;
 
 @property (nonatomic) UILabel *errorLabel;
 @property (nonatomic) NSLayoutConstraint *errorLabelTopConstraint;
-@property (nonatomic) NSLayoutConstraint *errorLabelZeroHeightConstraint;
 @property (nonatomic) NSArray<NSLayoutConstraint *> *errorLabelHorizontalConstraints;
 
 @property (nonatomic, readonly) BOOL hasError;
-@property (nonatomic) BOOL errorIsAnimating;
 
 @end
 
@@ -166,9 +164,6 @@ static NSTimeInterval const MFDefaultAnimationDuration = 0.3;
     self.errorLabelHorizontalConstraints = @[leading, trailing];
     
     [NSLayoutConstraint activateConstraints:@[self.errorLabelTopConstraint, bottom, leading, trailing]];
-    
-    self.errorLabelZeroHeightConstraint = [self.errorLabel.heightAnchor constraintEqualToConstant:0];
-    self.errorLabelZeroHeightConstraint.active = !self.hasError;
 }
 
 #pragma mark - Properties
@@ -392,9 +387,7 @@ static NSTimeInterval const MFDefaultAnimationDuration = 0.3;
 
     self.underlineLayer.frame = CGRectMake(0, yPos, CGRectGetWidth(self.bounds), underlineHeight);
 
-    if (!self.errorIsAnimating) {
-        [self updateErrorLabelPosition];
-    }
+    [self updateErrorLabelPosition];
 }
 
 - (void)updateBackgroundLayer
@@ -572,75 +565,22 @@ static NSTimeInterval const MFDefaultAnimationDuration = 0.3;
 - (void)showErrorLabelAnimated:(BOOL)animated
 {
     [self updateErrorLabelText];
-
-    if (animated && !self.errorIsAnimating) {
-        [self.superview layoutIfNeeded];
-
-        self.errorIsAnimating = YES;
-        self.errorLabelZeroHeightConstraint.active = NO;
-        self.errorLabelTopConstraint.constant = [self topPaddingForErrorLabelHidden:NO];
-
-        [UIView animateWithDuration:MFDefaultAnimationDuration
-                              delay:0.0
-                            options:UIViewAnimationOptionCurveEaseInOut
-                         animations:^{
-                             [self.superview layoutIfNeeded];
-                             self.errorLabel.alpha = 1.0f;
-                         } completion:^(BOOL finished) {
-                              self.errorIsAnimating = NO;
-                              // Layout error label without animation if isValid has changed since animation started.
-                              if (!self.hasError) {
-                                  [self hideErrorLabelAnimated:NO];
-                              }
-                         }];
-    }
-    else if (!animated) {
-        self.errorLabel.alpha = 1.0f;
-        self.errorLabelTopConstraint.constant = [self topPaddingForErrorLabelHidden:NO];
-        self.errorLabelZeroHeightConstraint.active = NO;
-    }
+    self.errorLabel.alpha = 1.0f;
 }
 
 - (void)hideErrorLabelAnimated:(BOOL)animated
 {
-    if (animated && !self.errorIsAnimating) {
-        self.errorIsAnimating = YES;
-        [UIView animateWithDuration:MFDefaultAnimationDuration * 0.5
-                              delay:0.0
-                            options:UIViewAnimationOptionCurveEaseOut
-                         animations:^{
-                            self.errorLabel.alpha = 0.0f;
-                         } completion:^(BOOL finished) {
-                             [self.superview layoutIfNeeded];
-
-                             self.errorLabelTopConstraint.constant = [self topPaddingForErrorLabelHidden:YES];
-                             self.errorLabelZeroHeightConstraint.active = YES;
-
-                             [UIView animateWithDuration:MFDefaultAnimationDuration * 0.3
-                                                   delay:0.0
-                                                 options:UIViewAnimationOptionCurveEaseOut
-                                              animations:^{
-                                                    [self.superview layoutIfNeeded];
-                                              } completion:^(BOOL finished) {
-                                                  self.errorIsAnimating = NO;
-                                                  [self updateErrorLabelText];
-                                                  // Layout error label without animation if isValid has changed since animation started.
-                                                  if (self.hasError) {
-                                                      [self showErrorLabelAnimated:NO];
-                                                  }
-                                              }];
-                         }];
-    }
-    else if (!animated) {
-        self.errorLabel.alpha = 0.0f;
-        self.errorLabelTopConstraint.constant = [self topPaddingForErrorLabelHidden:YES];
-        self.errorLabelZeroHeightConstraint.active = YES;
-    }
+    [self updateErrorLabelText];
+    self.errorLabel.alpha = 0.0f;
 }
 
 - (void)updateErrorLabelText
 {
-    self.errorLabel.text = self.error.localizedDescription;
+    NSString *error = self.error.localizedDescription;
+    if (error.length == 0) {
+        error = @" ";
+    }
+    self.errorLabel.text = error;
     [self.errorLabel sizeToFit];
 }
 
@@ -658,14 +598,6 @@ static NSTimeInterval const MFDefaultAnimationDuration = 0.3;
 - (void)updateErrorLabelPosition
 {
     self.errorLabelTopConstraint.constant = [self topPaddingForErrorLabelHidden:!self.hasError];
-}
-
-- (void)removeErrorLabel
-{
-    if (self.errorLabel) {
-        [self.errorLabel removeFromSuperview];
-        self.errorLabel = nil;
-    }
 }
 
 #pragma mark - UITextField
@@ -739,19 +671,6 @@ static NSTimeInterval const MFDefaultAnimationDuration = 0.3;
     leftViewRect.origin.y = CGRectGetMidY(_textRect) - (leftViewRect.size.height / 2.0f);
     
     return leftViewRect;
-}
-
-# pragma mark - UIView
-
-- (CGSize)intrinsicContentSize
-{
-    CGSize intrinsicSize = [super intrinsicContentSize];
-
-    if (!self.hasError) {
-        intrinsicSize.height = CGRectGetMaxY(self.underlineLayer.frame);
-    }
-
-    return intrinsicSize;
 }
 
 #pragma mark - Interface builder
